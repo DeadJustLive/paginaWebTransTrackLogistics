@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Package, Truck, MapPin, Shield, Clock, DollarSign, ArrowUp, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -13,27 +13,28 @@ import TrackingSection from './TrackingSection';
 export default function ClientLanding() {
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [scrollDebug, setScrollDebug] = useState(0);
-
   useEffect(() => {
-    const handleScroll = () => {
-      // Check both window and body/html scroll positions
-      const scrollPosition = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
-      setScrollDebug(scrollPosition);
-      setShowScrollTop(scrollPosition > 300);
-    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show button when Hero is NOT intersecting (user scrolled past it)
+        setShowScrollTop(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
 
-    // Add listener to window
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    if (heroRef.current) {
+      observer.observe(heroRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Also try scrolling body/html for compatibility
     document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
     document.body.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -76,7 +77,7 @@ export default function ClientLanding() {
       <ClientNavbar />
 
       {/* Hero Section */}
-      <section className="auto h-[600px] flex items-center justify-center overflow-hidden">
+      <section ref={heroRef} className="auto h-[600px] flex items-center justify-center overflow-hidden">
         <ImageWithFallback
           src="https://images.unsplash.com/photo-1726776230751-183496c51f00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsb2dpc3RpY3MlMjB3YXJlaG91c2UlMjB0cnVja3xlbnwxfHx8fDE3NjI2OTk0MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
           alt="TransTrack Logistics"
@@ -376,17 +377,24 @@ export default function ClientLanding() {
         onClose={() => setIsQuoterModalOpen(false)}
       />
 
+
+
       {/* Scroll to Top Button */}
-      {/* Scroll to Top Button */}
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-8 right-8 z-[9999] p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 animate-in fade-in zoom-in"
-          aria-label="Volver arriba"
-        >
-          <ArrowUp className="w-6 h-6" />
-        </button>
-      )}
+      <button
+        onClick={scrollToTop}
+        className="fixed p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center"
+        style={{
+          bottom: '2rem',
+          right: '2rem',
+          opacity: showScrollTop ? 1 : 0,
+          transform: showScrollTop ? 'translateY(0)' : 'translateY(1rem)',
+          pointerEvents: showScrollTop ? 'auto' : 'none',
+          visibility: showScrollTop ? 'visible' : 'hidden'
+        }}
+        aria-label="Volver arriba"
+      >
+        <ArrowUp className="w-6 h-6" />
+      </button>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
